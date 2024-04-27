@@ -55,10 +55,10 @@ class CollabFilterOneVectorPerItem(AbstractBaseCollabFilterSGD):
         # TIP: use self.n_factors to access number of hidden dimensions
         self.param_dict = dict(
             mu=ag_np.ones(1),
-            b_per_user=ag_np.ones(1), # FIX dimensionality
-            c_per_item=ag_np.ones(1), # FIX dimensionality
-            U=0.001 * random_state.randn(1), # FIX dimensionality
-            V=0.001 * random_state.randn(1), # FIX dimensionality
+            b_per_user=ag_np.ones(n_users), # FIX dimensionality
+            c_per_item=ag_np.ones(n_items), # FIX dimensionality
+            U=0.01 * random_state.randn(n_users, self.n_factors), # FIX dimensionality
+            V=0.01 * random_state.randn(n_items, self.n_factors), # FIX dimensionality
             )
 
 
@@ -81,8 +81,12 @@ class CollabFilterOneVectorPerItem(AbstractBaseCollabFilterSGD):
             Entry n is for the n-th pair of user_id, item_id values provided.
         '''
         # TODO: Update with actual prediction logic
-        N = user_id_N.size
-        yhat_N = ag_np.ones(N)
+        # print(f"{mu.shape}, {b_per_user[user_id_N].shape}, {c_per_item[item_id_N].shape}, {ag_np.dot(U[user_id_N].T, V[item_id_N]).shape}")
+
+        dots = ag_np.sum(U[user_id_N] * V[item_id_N], axis=1)
+        yhat_N = mu + b_per_user[user_id_N] + c_per_item[item_id_N] + dots
+        
+        # return yhat_N
         return yhat_N
 
 
@@ -103,7 +107,8 @@ class CollabFilterOneVectorPerItem(AbstractBaseCollabFilterSGD):
         # TIP: use self.alpha to access regularization strength
         y_N = data_tuple[2]
         yhat_N = self.predict(data_tuple[0], data_tuple[1], **param_dict)
-        loss_total = 0.0
+        first_term = self.alpha * (ag_np.sum(param_dict['U'] ** 2) + ag_np.sum(param_dict['V'] ** 2))
+        loss_total = first_term + ag_np.sum((y_N - yhat_N) ** 2)
         return loss_total    
 
 
@@ -114,10 +119,11 @@ if __name__ == '__main__':
         load_train_valid_test_datasets()
     # Create the model and initialize its parameters
     # to have right scale as the dataset (right num users and items)
-    model = CollabFilterOneVectorPerItem(
-        n_epochs=10, batch_size=10000, step_size=0.1,
-        n_factors=2, alpha=0.0)
-    model.init_parameter_dict(n_users, n_items, train_tuple)
+    for k in [2, 10, 50]:
+        model = CollabFilterOneVectorPerItem(
+            n_epochs=1, batch_size=32, step_size=0.2,
+            n_factors=k, alpha=0.0)
+        model.init_parameter_dict(n_users, n_items, train_tuple)
 
-    # Fit the model with SGD
-    model.fit(train_tuple, valid_tuple)
+        # Fit the model with SGD
+        model.fit(train_tuple, valid_tuple)

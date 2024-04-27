@@ -4,6 +4,7 @@ import os
 import sys
 import pandas as pd
 from sklearn import metrics
+import matplotlib.pyplot as plt
 
 class AbstractBaseCollabFilterSGD(object):
     """ Base class for user-movie rating prediction via matrix factorization.
@@ -154,6 +155,8 @@ class AbstractBaseCollabFilterSGD(object):
         self.trace_smooth_loss = []
         self.trace_auc_train = []
         self.trace_auc_valid = []
+        trace_mae_train = []
+        trace_mae_valid = []
 
         self.all_loss = []
 
@@ -201,6 +204,8 @@ class AbstractBaseCollabFilterSGD(object):
                     valid_perf_dict = self.evaluate_perf_metrics(*valid_data_tuple)
                     self.trace_auc_train.append(train_perf_dict['auc'])
                     self.trace_auc_valid.append(valid_perf_dict['auc'])
+                    trace_mae_train.append(train_perf_dict['mae'])
+                    trace_mae_valid.append(valid_perf_dict['mae'])
 
                     # Compute 'smoothed' loss by averaging over last B batches
                     # Might remove some of the stochasticity in using only the
@@ -227,6 +232,15 @@ class AbstractBaseCollabFilterSGD(object):
                 for key, arr in self.param_dict.items():
                     arr[:] = arr - self.step_size * grad_dict[key]
 
+
+        plt.plot(self.trace_epoch, trace_mae_train, 'r--', label='train') 
+        plt.plot(self.trace_epoch, trace_mae_valid, 'b--', label='valid')
+        plt.legend(loc='upper right')
+        plt.xlabel('num epochs')
+        plt.ylabel('MAE')
+        filename = "problem1k" + str(self.n_factors) + ".png"
+        plt.savefig(filename)
+        plt.close()
         # That's all folks.
 
 
