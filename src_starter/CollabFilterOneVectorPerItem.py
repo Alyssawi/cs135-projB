@@ -14,6 +14,8 @@ import autograd.numpy as ag_np
 from AbstractBaseCollabFilterSGD import AbstractBaseCollabFilterSGD
 from train_valid_test_loader import load_train_valid_test_datasets
 
+import time
+
 # Some packages you might need (uncomment as necessary)
 ## import pandas as pd
 ## import matplotlib
@@ -119,11 +121,16 @@ if __name__ == '__main__':
         load_train_valid_test_datasets()
     # Create the model and initialize its parameters
     # to have right scale as the dataset (right num users and items)
-    for k in [2, 10, 50]:
+    start = time.time()
+    for alp in [0.1, 0.5, 1, 2, 5, 10, 100]:
         model = CollabFilterOneVectorPerItem(
-            n_epochs=1, batch_size=32, step_size=0.2,
-            n_factors=k, alpha=0.0)
+            n_epochs=10, batch_size=32, step_size=0.2,
+            n_factors=50, alpha=alp)
         model.init_parameter_dict(n_users, n_items, train_tuple)
 
         # Fit the model with SGD
         model.fit(train_tuple, valid_tuple)
+
+    end = time.time()
+
+    print(end - start)
