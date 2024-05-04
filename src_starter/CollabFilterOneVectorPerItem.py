@@ -110,7 +110,7 @@ class CollabFilterOneVectorPerItem(AbstractBaseCollabFilterSGD):
         y_N = data_tuple[2]
         yhat_N = self.predict(data_tuple[0], data_tuple[1], **param_dict)
         # first_term = self.alpha * (ag_np.sum(param_dict['U'] ** 2) + ag_np.sum(param_dict['V'] ** 2))
-        first_term = self.alpha * (ag_np.sum(param_dict['b_per_user'] ** 2) + ag_np.sum(param_dict['c_per_item'] ** 2) + ag_np.sum(param_dict['U'] ** 2) + ag_np.sum(param_dict['V'] ** 2))
+        first_term = self.alpha * (ag_np.sum(param_dict['b_per_user'][data_tuple[0]] ** 2) + ag_np.sum(param_dict['c_per_item'][data_tuple[1]] ** 2) + ag_np.sum(param_dict['U'][data_tuple[0]] ** 2) + ag_np.sum(param_dict['V'][data_tuple[1]] ** 2))
         loss_total = first_term + ag_np.sum((y_N - yhat_N) ** 2)
 
         return loss_total    
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     start = time.time()
     for alp in [0.1, 0.5, 1, 2, 5, 10, 100]:
         model = CollabFilterOneVectorPerItem(
-            n_epochs=2, batch_size=32, step_size=0.2,
+            n_epochs=150, batch_size=32, step_size=0.2,
             n_factors=50, alpha=alp)
         model.init_parameter_dict(n_users, n_items, train_tuple)
 

@@ -238,7 +238,7 @@ class AbstractBaseCollabFilterSGD(object):
         plt.legend(loc='center right')
         plt.xlabel('num epochs')
         plt.ylabel('AUC')
-        filename = "TESTproblem1balpha" + str(self.alpha) + ".png"
+        filename = "subscriptTESTproblem1balpha" + str(self.alpha) + ".png"
         plt.savefig(filename)
         plt.close()
         # That's all folks.
