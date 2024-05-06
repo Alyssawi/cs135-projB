@@ -124,10 +124,10 @@ if __name__ == '__main__':
     # Create the model and initialize its parameters
     # to have right scale as the dataset (right num users and items)
     start = time.time()
-    for alp in [0.1, 0.5, 1, 2, 5, 10, 100]:
+    for batch in [128, 256, 512]:
         model = CollabFilterOneVectorPerItem(
-            n_epochs=150, batch_size=32, step_size=0.2,
-            n_factors=50, alpha=alp)
+            n_epochs=150, batch_size=batch, step_size=0.2,
+            n_factors=50, alpha=0.5)
         model.init_parameter_dict(n_users, n_items, train_tuple)
 
         # Fit the model with SGD

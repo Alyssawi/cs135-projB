@@ -1,9 +1,14 @@
-
 import pandas as pd
 from surprise import Dataset, NormalPredictor, Reader, SVD, accuracy
 from surprise.model_selection import cross_validate
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 import sklearn.model_selection
+import sklearn.pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import cross_val_score, GridSearchCV, RandomizedSearchCV
+from sklearn.feature_selection import SelectKBest, chi2
 import numpy as np
 
 
@@ -17,7 +22,6 @@ user_info = pd.read_csv('../data_movie_lens_100k/user_info.csv', usecols=[1,2])
 movie_info = pd.read_csv('../data_movie_lens_100k/movie_info.csv', usecols=[2])
 print(user_info)
 print(movie_info)
-movie_info = movie_info / 1000000
 
 
 def tuple_to_surprise_dataset(tupl):
@@ -46,7 +50,7 @@ def tuple_to_surprise_dataset(tupl):
 # train an SVD model using the training set
 trainset = tuple_to_surprise_dataset(train_tuple).build_full_trainset()
 # print(trainset)
-algo = SVD(n_factors=10)
+algo = SVD(n_factors=500)
 algo.fit(trainset)
 
 
@@ -104,35 +108,25 @@ def build_good_table(tupl):
     return concatenatedcrap
 
 features = build_good_table(train_tuple)
-print(features[:10])
-print(features)
-print(features.shape)
-
-base_gbdt = GradientBoostingClassifier(
-    n_estimators=100,
-    criterion='friedman_mse',
-    max_depth=16,
-    min_samples_split=2,
-    min_samples_leaf=1)
-
-gbdt_hyperparameter_grid_by_name = dict(
-    max_features=[12],
-    max_depth=[8],
-    learning_rate=[0.01],
-    n_estimators=[200],
-    random_state=[101],
-    )
 
 
-gbdt_searcher = sklearn.model_selection.GridSearchCV(base_gbdt,
-                param_grid=gbdt_hyperparameter_grid_by_name, scoring='balanced_accuracy',
-                return_train_score=True, refit=False, cv=3, verbose=3)
+classifier = MLPClassifier(max_iter=500)
 
-gbdt_searcher.fit(features, (train_tuple[2] > 4.5))
+param_grid = {
+    'hidden_layer_sizes': [(500,)],
+    'alpha': [0.01]
+}
 
-best_gbdt = base_gbdt
-best_gbdt.set_params(**gbdt_searcher.best_params_) # TODO call set_params using the best_params_ found by your searcher
-best_gbdt.fit(features, (train_tuple[2] > 4.5))
+grid = GridSearchCV(classifier, param_grid, cv=5, scoring='balanced_accuracy', return_train_score=True, verbose=4)
+grid.fit(features, (train_tuple[2] > 4.5))
+
+
+print(f"Best parameters:", grid.best_params_)
+print(f"Best AUROC score:", grid.best_score_)
+
+best = classifier
+best.set_params(**grid.best_params_)
+best.fit(features, (train_tuple[2] > 4.5))
 
 leaderboard = pd.read_csv('../data_movie_lens_100k/ratings_masked_leaderboard_set.csv')
 lead_tuple = (
@@ -142,22 +136,6 @@ lead_tuple = (
 
 testset = build_good_table(lead_tuple)
 
-output = best_gbdt.predict(testset)
+output = best.predict(testset)
 
-np.savetxt('predicted_ratings_leaderboard.txt', output, fmt='%i')
-print(gbdt_searcher.best_params_)
-# Sanity check: we compute our own prediction and compare it against the model's prediction 
-# our prediction
-my_est = mu + bu + bi + np.dot(pu, qi) 
-
-# the model's prediction
-# NOTE: the training of the SVD model is random, so the prediction can be different with 
-# different runs -- this is normal.   
-svd_pred = algo.predict(uid, iid, r_ui=rui)
-
-# The two predictions should be the same
-print("My prediction: " + str(my_est) + ", SVD's prediction: " + str(svd_pred.est) + ", difference: " + str(np.abs(my_est - svd_pred.est)))
-
-assert(np.abs(my_est - svd_pred.est) < 1e-6)
-
-
+np.savetxt('predicted_ratings_leaderboardMLP.txt', output, fmt='%i')

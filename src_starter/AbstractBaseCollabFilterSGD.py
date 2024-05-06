@@ -233,12 +233,12 @@ class AbstractBaseCollabFilterSGD(object):
                     arr[:] = arr - self.step_size * grad_dict[key]
 
 
-        plt.plot(self.trace_epoch, self.trace_auc_train, 'r--', label='train') 
-        plt.plot(self.trace_epoch, self.trace_auc_valid, 'b--', label='valid')
+        plt.plot(self.trace_epoch, trace_mae_train, 'r--', label='train') 
+        plt.plot(self.trace_epoch, trace_mae_valid, 'b--', label='valid')
         plt.legend(loc='center right')
         plt.xlabel('num epochs')
-        plt.ylabel('AUC')
-        filename = "subscriptTESTproblem1balpha" + str(self.alpha) + ".png"
+        plt.ylabel('MAE')
+        filename = "1balpha0.5batch" + str(self.batch_size) + ".png"
         plt.savefig(filename)
         plt.close()
         # That's all folks.
